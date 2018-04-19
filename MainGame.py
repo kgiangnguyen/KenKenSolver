@@ -6,18 +6,18 @@ examplePuzzle = {("C1", 2, "") : [(1,1)], ("C2", 18, "*") : [(1,2),(1,3),(2,3),(
 goalPuzzle = {(1,1):None, (1,2):None, (1,3):None, (2,1):None, (2,2):None, (2,3):None, (3,1):None, (3,2):None, (3,3):None}
 
 
-def backTracking(puzzle, cellDomain):
+def backTracking(puzzle):
     if isComplete(goalPuzzle):
         return goalPuzzle
     else:
-        cell = selectEmptyCell(puzzle, cellDomain)
-        print(cell)
+        cell = selectEmptyCell(puzzle)
         for value in cellDomain[cell]:
+            goalPuzzle[cell] = value
             if checkConstraints(cell, puzzle):
-                result = backTracking(puzzle, cellDomain)
+                result = backTracking(puzzle)
                 if result != "":
                     return result
-            goalPuzzle[cell] = 0
+            goalPuzzle[cell] = None
     return ""
 
 
@@ -35,33 +35,29 @@ def isUnique(cell):
 
 def isCorrect(puzzle):
     for cage in puzzle:
+        target = cage[1]
+        operation = cage[2]
         cells = puzzle[cage]
-        if cage[2] == "+":
-            total = 0
-            for cell in cells:
-                total += goalPuzzle[cell]
-            if total != cage[1]:
-                return False
-        if cage[2] == "x":
-            total = 1
-            for cell in cells:
-                total *= goalPuzzle[cell]
-            if total != cage[1]:
-                return False
-        if cage[2] == "-":
-            firstNum = cells[0]
-            secondNum = cells[1]
-            if (firstNum-secondNum != cage[1]) or (secondNum-firstNum != cage[1]):
-                return False
-        if cage[2] == "/":
-            firstNum = cells[0]
-            secondNum = cells[1]
-            if (firstNum/secondNum != cage[1]) or (secondNum/firstNum != cage[1]):
-                return False
-    return True
+        cellValueList = []
+        for cell in cells:
+            cellValueList.append(goalPuzzle[cell])
+        if operation == "+":
+            return sum(cellValueList) == target
+        elif operation == "*":
+            multiply = 1
+            for value in cellValueList:
+                multiply *= value
+            return multiply == target
+        elif operation == "-":
+            # print(cellValueList)
+            return abs(cellValueList[0] - cellValueList[1]) == target
+        elif operation == "/":
+            return (max(cellValueList) / min(cellValueList)) == target
+        else:
+            return cellValueList[0] == target
 
 
-def selectEmptyCell(puzzle, cellDomain):
+def selectEmptyCell(puzzle):
     # Find the next cell which has the smallest domain to track. Set minSizeDomain to sqrSize+1 to make sure all domains
     # are considered.
     minSizeDomain = sqrSize+1
@@ -80,12 +76,11 @@ def isComplete(puzzle):
     return True
 
 
-def generateCellDomain(puzzle, cellDomain):
-    # Generate domain for each empty cell
+def generateCellDomain(puzzle):
     for cage in puzzle:
         cells = puzzle[cage]
         for cell in cells:
-
+            cellDomain[cell] = cageDomain[cage]
     return cellDomain
 
 
@@ -102,33 +97,39 @@ def findNeighbors(cell):
     return neighbors
 
 
-# TODO: Debug
 def generateCageDomain(puzzle):
     for cage in puzzle:
+        cageDomain[cage] = set()
         target = cage[1]
         operation = cage[2]
         count = len(puzzle[cage])
         combinations = itertools.combinations_with_replacement(domain, count)
-        domainSet = set()
         for comb in combinations:
-            total = 0 if operation == "+" else 1
-            subDiv = target
-            for value in comb:
-                if operation == "+":
-                    total += value
-                elif operation == "-":
-                    subDiv -= value
-                elif operation == "x":
-                    total *= value
-                elif operation == "/":
-                    subDiv /= value
+            domainSet = set()
+            if operation in ["+", "*", ""]:
+                sumMul = 0 if operation == "+" else 1
+                for value in comb:
+                    if operation == "+":
+                        sumMul += value
+                    elif operation == "*":
+                        sumMul *= value
+                    else:
+                        sumMul = value
+                    if value not in domainSet:
+                        domainSet.add(value)
+                if (sumMul == target and operation in ["+", "*", ""]):
+                    for value in domainSet:
+                        cageDomain[cage].add(value)
+            else:
+                if operation == "-":
+                    subDiv = abs(comb[0] - comb[1])
                 else:
-                    total = value
-                if value not in domainSet:
-                    domainSet.add(value)
-            if (total == target and operation in ["+", "x"]) or (subDiv == 0 and operation == "-") or (subDiv == 1 and operation == "/"):
-                cageDomain[cage] = domainSet
+                    subDiv = max(comb[0], comb[1]) / min(comb[0], comb[1])
+                if subDiv == target:
+                    for value in comb:
+                        cageDomain[cage].add(value)
 
+    return cageDomain
 
 
 def getMax(puzzle):
@@ -144,12 +145,10 @@ def getMax(puzzle):
     return max
 
 
-
 cellDomain = {}
 cageDomain = {}
 sqrSize = getMax(examplePuzzle)
 domain = list(range(1,sqrSize+1))
-# print(findNeighbors((1,1)))
-generateCellDomain(examplePuzzle, cellDomain)
-print(selectEmptyCell(examplePuzzle, cellDomain))
-# print(backTracking(examplePuzzle, cellDomain))
+generateCageDomain(examplePuzzle)
+generateCellDomain(examplePuzzle)
+print(backTracking(examplePuzzle))
