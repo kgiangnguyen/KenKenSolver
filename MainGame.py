@@ -1,3 +1,5 @@
+import itertools
+
 examplePuzzle = {("C1", 2, "") : [(1,1)], ("C2", 18, "*") : [(1,2),(1,3),(2,3),(3,3)],
                  ("C3", 2, "-") : [(2,1),(2,2)], ("C4", 2, "/") : [(3,1),(3,2)]}
 
@@ -9,13 +11,13 @@ def backTracking(puzzle, cellDomain):
         return goalPuzzle
     else:
         cell = selectEmptyCell(puzzle, cellDomain)
+        print(cell)
         for value in cellDomain[cell]:
             if checkConstraints(cell, puzzle):
                 result = backTracking(puzzle, cellDomain)
                 if result != "":
                     return result
             goalPuzzle[cell] = 0
-    #         Comment for git tutorial
     return ""
 
 
@@ -60,38 +62,30 @@ def isCorrect(puzzle):
 
 
 def selectEmptyCell(puzzle, cellDomain):
+    # Find the next cell which has the smallest domain to track. Set minSizeDomain to sqrSize+1 to make sure all domains
+    # are considered.
     minSizeDomain = sqrSize+1
     nextCell = ()
     for cell, domain in cellDomain.items():
-        if len(domain) < minSizeDomain and goalPuzzle[cell] == None:
+        if len(domain) < minSizeDomain and goalPuzzle[cell] is None:
             nextCell = cell
             minSizeDomain = len(domain)
     return nextCell
 
 
 def isComplete(puzzle):
-    for cell in puzzle:
-        if puzzle[cell] == 0:
+    for cell in goalPuzzle:
+        if goalPuzzle[cell] is None:
             return False
     return True
 
 
 def generateCellDomain(puzzle, cellDomain):
-    domain = list(range(1, sqrSize+1))
+    # Generate domain for each empty cell
     for cage in puzzle:
         cells = puzzle[cage]
         for cell in cells:
-            if goalPuzzle[cell] == None:
-                neighbors = findNeighbors(cell)
-                takenValues = set()
-                for neighbor in neighbors:
-                    if goalPuzzle[cell] != None:
-                        takenValues.add(goalPuzzle[neighbor])
-                for value in domain:
-                    if value not in takenValues:
-                        cellDomain[cell].append(value)
-            else:
-                cellDomain[cell] = []
+
     return cellDomain
 
 
@@ -106,6 +100,35 @@ def findNeighbors(cell):
         if potentialNeighbor != cell and potentialNeighbor not in neighbors:
             neighbors.append(potentialNeighbor)
     return neighbors
+
+
+# TODO: Debug
+def generateCageDomain(puzzle):
+    for cage in puzzle:
+        target = cage[1]
+        operation = cage[2]
+        count = len(puzzle[cage])
+        combinations = itertools.combinations_with_replacement(domain, count)
+        domainSet = set()
+        for comb in combinations:
+            total = 0 if operation == "+" else 1
+            subDiv = target
+            for value in comb:
+                if operation == "+":
+                    total += value
+                elif operation == "-":
+                    subDiv -= value
+                elif operation == "x":
+                    total *= value
+                elif operation == "/":
+                    subDiv /= value
+                else:
+                    total = value
+                if value not in domainSet:
+                    domainSet.add(value)
+            if (total == target and operation in ["+", "x"]) or (subDiv == 0 and operation == "-") or (subDiv == 1 and operation == "/"):
+                cageDomain[cage] = domainSet
+
 
 
 def getMax(puzzle):
@@ -123,7 +146,10 @@ def getMax(puzzle):
 
 
 cellDomain = {}
+cageDomain = {}
 sqrSize = getMax(examplePuzzle)
+domain = list(range(1,sqrSize+1))
 # print(findNeighbors((1,1)))
 generateCellDomain(examplePuzzle, cellDomain)
-print(backTracking(examplePuzzle))
+print(selectEmptyCell(examplePuzzle, cellDomain))
+# print(backTracking(examplePuzzle, cellDomain))
