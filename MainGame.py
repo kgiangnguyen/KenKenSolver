@@ -1,20 +1,14 @@
 import itertools
 
-examplePuzzle = {("C1", 2, "") : [(1,1)], ("C2", 18, "*") : [(1,2),(1,3),(2,3),(3,3)],
-                 ("C3", 2, "-") : [(2,1),(2,2)], ("C4", 2, "/") : [(3,1),(3,2)]}
-
-goalPuzzle = {(1,1):None, (1,2):None, (1,3):None, (2,1):None, (2,2):None, (2,3):None, (3,1):None, (3,2):None, (3,3):None}
-
-
-def backTracking(puzzle):
-    if isComplete(goalPuzzle):
+def backTracking():
+    if isComplete():
         return goalPuzzle
     else:
-        cell = selectEmptyCell(puzzle)
+        cell = selectEmptyCell()
         for value in cellDomain[cell]:
             goalPuzzle[cell] = value
-            if checkConstraints(cell, puzzle):
-                result = backTracking(puzzle)
+            if checkConstraints(cell, examplePuzzle2):
+                result = backTracking()
                 if result != "":
                     return result
             goalPuzzle[cell] = None
@@ -35,29 +29,42 @@ def isUnique(cell):
 
 def isCorrect(puzzle):
     for cage in puzzle:
+        print(cage)
         target = cage[1]
         operation = cage[2]
         cells = puzzle[cage]
+        isFull = True
         cellValueList = []
+
         for cell in cells:
-            cellValueList.append(goalPuzzle[cell])
-        if operation == "+":
-            return sum(cellValueList) == target
-        elif operation == "*":
-            multiply = 1
-            for value in cellValueList:
-                multiply *= value
-            return multiply == target
-        elif operation == "-":
-            # print(cellValueList)
-            return abs(cellValueList[0] - cellValueList[1]) == target
-        elif operation == "/":
-            return (max(cellValueList) / min(cellValueList)) == target
-        else:
-            return cellValueList[0] == target
+            value = goalPuzzle[cell]
+            if value == None:
+                isFull = False
+                break
+            cellValueList.append(value)
+            # print("==>", cellValueList)
 
+        if isFull:
+            print("=========")
+            if operation == "+":
+                print("==========>", cellValueList)
+                return sum(cellValueList) == target
+            elif operation == "*":
+                multiply = 1
+                for value in cellValueList:
+                    # print(value)
+                    multiply *= value
+                return multiply == target
+            elif operation == "-":
+                return abs(cellValueList[0] - cellValueList[1]) == target
+            elif operation == "/":
+                return (max(cellValueList) / min(cellValueList)) == target
+            else:
+                return cellValueList[0] == target
 
-def selectEmptyCell(puzzle):
+    return True
+
+def selectEmptyCell():
     # Find the next cell which has the smallest domain to track. Set minSizeDomain to sqrSize+1 to make sure all domains
     # are considered.
     minSizeDomain = sqrSize+1
@@ -69,7 +76,7 @@ def selectEmptyCell(puzzle):
     return nextCell
 
 
-def isComplete(puzzle):
+def isComplete():
     for cell in goalPuzzle:
         if goalPuzzle[cell] is None:
             return False
@@ -145,10 +152,27 @@ def getMax(puzzle):
     return max
 
 
-cellDomain = {}
-cageDomain = {}
-sqrSize = getMax(examplePuzzle)
-domain = list(range(1,sqrSize+1))
-generateCageDomain(examplePuzzle)
-generateCellDomain(examplePuzzle)
-print(backTracking(examplePuzzle))
+if __name__ == '__main__':
+    examplePuzzle = {("C1", 2, ""): [(1, 1)], ("C2", 18, "*"): [(1, 2), (1, 3), (2, 3), (3, 3)],
+                     ("C3", 2, "-"): [(2, 1), (2, 2)], ("C4", 2, "/"): [(3, 1), (3, 2)]}
+
+    examplePuzzle2 = {("C1", 6, "*"): [(1, 1), (1, 2), (2, 1)], ("C2", 2, "/"): [(1, 3), (1, 4)],
+                      ("C3", 3, "-"): [(2, 2), (2, 3)], ("C4", 1, "-"): [(2, 4), (3, 4)],
+                      ("C5", 7, "+"): [(3, 1), (4, 1), (4, 2)], ("C6", 5, "+"): [(3, 2), (3, 3)],
+                      ("C7", 4, "+"): [(4, 3), (4, 4)]}
+
+    # goalPuzzle = {(1, 1): None, (1, 2): None, (1, 3): None, (1, 4): None, (2, 1): None, (2, 2): None, (2, 3): None,
+    #               (2, 4): None,
+    #               (3, 1): None, (3, 2): None, (3, 3): None, (3, 4): None, (4, 1): None, (4, 2): None, (4, 3): None,
+    #               (4, 4): None}
+
+    cellDomain = {}
+    cageDomain = {}
+    sqrSize = getMax(examplePuzzle2)
+    domain = list(range(1,sqrSize+1))
+    generateCageDomain(examplePuzzle2)
+    generateCellDomain(examplePuzzle2)
+    # print(backTracking())
+
+    goalPuzzle = {(1, 2): 1, (3, 2): 2, (1, 3): 4, (3, 3): 3, (4, 1): 4, (3, 1): 1, (4, 4): 1, (1, 4): 2, (2, 4): 3, (2, 3): 1, (2, 1): 2, (4, 3): 2, (2, 2): 4, (4, 2): 3, (3, 4): 4, (1, 1): 3}
+    print(isCorrect(examplePuzzle2))
